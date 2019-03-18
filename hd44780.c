@@ -12,7 +12,7 @@
 uint8_t hd44780_read(hd44780_t *dev, uint8_t reg_sel)
 	{
 	// set register select pin
-	if (reg_sel == HD44780_PIN_RS_IR)
+	if (reg_sel == HD44780_REG_SEL_IR)
 		pin_state_set(&dev->pin_rs, PIN_OUT_LOW);  // instruction register
 	else
 		pin_state_set(&dev->pin_rs, PIN_OUT_HIGH); // data register
@@ -31,7 +31,7 @@ uint8_t hd44780_read(hd44780_t *dev, uint8_t reg_sel)
 
 	// set data pins for input
 	for (uint8_t i = 0; i < pin_count; i++)
-		pin_state_set(&dev->pin_data[i+pin_offset], PIN_IN_HIGHZ);
+		pin_state_set(&dev->pin_data[pin_offset + i], PIN_IN_HIGHZ);
 
 	// activate enable pin
 	pin_state_set(&dev->pin_en, PIN_OUT_HIGH);
@@ -39,12 +39,11 @@ uint8_t hd44780_read(hd44780_t *dev, uint8_t reg_sel)
 	// read data
 	uint8_t data = 0;
 	for (uint8_t i = 0; i < pin_count; i++)
-		data |= (uint8_t)(pin_in(&dev->pin_data[i+pin_offset]) << i);
+		data |= (uint8_t)(pin_in(&dev->pin_data[pin_offset + i]) << i);
 
 	// deactivate enable
 	pin_state_set(&dev->pin_en, PIN_OUT_LOW);
 
-//	_delay_us(300);
 	return data;
 	}
 
@@ -55,16 +54,13 @@ uint8_t hd44780_read_byte(hd44780_t *dev, uint8_t reg_sel)
 	{
 	uint8_t data_byte = 0;
 
+	// read byte
 	if ((dev->func_set & HD44780_FS_BITS_MASK) == HD44780_FS_BITS_4)
-		{
 		// 4-bit read
 		data_byte = (uint8_t)((hd44780_read(dev, reg_sel) << 4) | hd44780_read(dev, reg_sel));
-		}
 	else
-		{
 		// 8-bit read
 		data_byte = hd44780_read(dev, reg_sel);
-		}
 
 	return data_byte;
 	}
@@ -74,13 +70,8 @@ uint8_t hd44780_read_byte(hd44780_t *dev, uint8_t reg_sel)
 //----------------------------------------------------------------------------------------------------
 void hd44780_busy_flag_wait(hd44780_t *dev)
 	{
-//printf("hd44780_busy_flag_wait: ");
-	int count = 0;
-	while ((dev->last_addr = hd44780_read_byte(dev, HD44780_PIN_RS_IR)) & HD44780_IR_BUSY_FLAG_MASK)
-		{
-		count++;
-		}
-//printf("%d  0x%02hx\n", count, dev->last_addr);
+	while ((dev->ir_address = hd44780_read_byte(dev, HD44780_REG_SEL_IR)) & HD44780_IR_BUSY_FLAG_MASK)
+		;
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -88,9 +79,8 @@ void hd44780_busy_flag_wait(hd44780_t *dev)
 //----------------------------------------------------------------------------------------------------
 void hd44780_write(hd44780_t *dev, uint8_t reg_sel, uint8_t data)
 	{
-//printf("    hd44780_write: 0x%02hx\n", data);
 	// set register select pin
-	if (reg_sel == HD44780_PIN_RS_IR)
+	if (reg_sel == HD44780_REG_SEL_IR)
 		pin_state_set(&dev->pin_rs, PIN_OUT_LOW);  // instruction register
 	else
 		pin_state_set(&dev->pin_rs, PIN_OUT_HIGH); // data register
@@ -111,21 +101,16 @@ void hd44780_write(hd44780_t *dev, uint8_t reg_sel, uint8_t data)
 	for (uint8_t i = 0; i < pin_count; i++)
 		{
 		if (data & (1 << i))
-			pin_state_set(&dev->pin_data[i+pin_offset], PIN_OUT_HIGH);
+			pin_state_set(&dev->pin_data[pin_offset + i], PIN_OUT_HIGH);
 		else
-			pin_state_set(&dev->pin_data[i+pin_offset], PIN_OUT_LOW);
+			pin_state_set(&dev->pin_data[pin_offset + i], PIN_OUT_LOW);
 		}
 
 	// activate enable
 	pin_state_set(&dev->pin_en, PIN_OUT_HIGH);
 
-	// delay for enable pulse width
-//	_delay_us(0.230); // PWeh = 230 nanosec pulse width
-
 	// deactivate enable
 	pin_state_set(&dev->pin_en, PIN_OUT_LOW);
-
-//	_delay_us(300);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -133,7 +118,7 @@ void hd44780_write(hd44780_t *dev, uint8_t reg_sel, uint8_t data)
 //----------------------------------------------------------------------------------------------------
 void hd44780_write_byte(hd44780_t *dev, uint8_t reg_sel, uint8_t data_byte)
 	{
-printf("hd44780_write_byte: 0x%02hx\n", data_byte);
+printf("hd44780_write_byte: %c 0x%02hx\n", (reg_sel == HD44780_REG_SEL_IR ? 'I' : 'D'), data_byte);
 	// write byte
 	if ((dev->func_set & HD44780_FS_BITS_MASK) == HD44780_FS_BITS_4)
 		{
@@ -156,7 +141,7 @@ printf("hd44780_write_byte: 0x%02hx\n", data_byte);
 void hd44780_func_set(hd44780_t *dev, uint8_t options)
 	{
 	dev->func_set = (uint8_t)(HD44780_FUNCTION_SET_CMD | (options & HD44780_FS_OPTIONS_MASK));
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->func_set);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->func_set);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -165,7 +150,7 @@ void hd44780_func_set(hd44780_t *dev, uint8_t options)
 void hd44780_entry_mode(hd44780_t *dev, uint8_t options)
 	{
 	dev->entry_mode = (uint8_t)(HD44780_ENTRY_MODE_CMD | (options & HD44780_EM_OPTIONS_MASK));
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->entry_mode);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->entry_mode);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -174,7 +159,7 @@ void hd44780_entry_mode(hd44780_t *dev, uint8_t options)
 void hd44780_disp_control(hd44780_t *dev, uint8_t options)
 	{
 	dev->disp_control = (uint8_t)(HD44780_DISPLAY_CONTROL_CMD | (options & HD44780_DC_OPTIONS_MASK));
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->disp_control);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->disp_control);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -183,7 +168,7 @@ void hd44780_disp_control(hd44780_t *dev, uint8_t options)
 void hd44780_cur_disp_shift(hd44780_t *dev, uint8_t options)
 	{
 	dev->cur_disp_shift = (uint8_t)(HD44780_CUR_DISP_SHIFT_CMD | (options & HD44780_CDS_OPTIONS_MASK));
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->cur_disp_shift);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->cur_disp_shift);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -191,7 +176,7 @@ void hd44780_cur_disp_shift(hd44780_t *dev, uint8_t options)
 //----------------------------------------------------------------------------------------------------
 void hd44780_clear(hd44780_t *dev)
 	{
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, HD44780_CLEAR_DISPLAY_CMD);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, HD44780_CLEAR_DISPLAY_CMD);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -199,7 +184,7 @@ void hd44780_clear(hd44780_t *dev)
 //----------------------------------------------------------------------------------------------------
 void hd44780_home(hd44780_t *dev)
 	{
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, HD44780_RETURN_HOME_CMD);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, HD44780_RETURN_HOME_CMD);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -233,7 +218,6 @@ void hd44780_init(hd44780_t *dev, uint8_t rows, uint8_t cols, uint8_t bit_mode, 
 	// flag structure as initialized
 	dev->valid_flag = HD44780_VALID;
 
-
 	// device initialization
 
 	// Configure control pins as output and set low
@@ -241,16 +225,27 @@ void hd44780_init(hd44780_t *dev, uint8_t rows, uint8_t cols, uint8_t bit_mode, 
 	pin_state_set(&dev->pin_rw, PIN_OUT_LOW); // rw = write
 	pin_state_set(&dev->pin_en, PIN_OUT_LOW); // en = inactive
 
-	// hd44780 initialization routine (4-bit mode)
+	// configure data pins for output and set low
+	for (uint8_t i = 0; i < 8; i++)
+		pin_state_set(&dev->pin_data[i], PIN_OUT_LOW);
+
 //printf("hd44780_init: start init\n");
-//	_delay_ms(15);
-	hd44780_write(dev, HD44780_PIN_RS_IR, 0x03);
-//	_delay_ms(4.1);
-	hd44780_write(dev, HD44780_PIN_RS_IR, 0x03);
-//	_delay_ms(4.1);
-	hd44780_write(dev, HD44780_PIN_RS_IR, 0x03);
-//	_delay_ms(4.1);
-	hd44780_write(dev, HD44780_PIN_RS_IR, 0x02);
+	// initialize device
+	if (bit_mode == HD44780_FS_BITS_4)
+		{
+		// hd44780 initialization routine (4-bit mode)
+		hd44780_write(dev, HD44780_REG_SEL_IR, 0x03);
+		hd44780_write(dev, HD44780_REG_SEL_IR, 0x03);
+		hd44780_write(dev, HD44780_REG_SEL_IR, 0x03);
+		hd44780_write(dev, HD44780_REG_SEL_IR, 0x02);
+		}
+	else
+		{
+		// hd44780 initialization routine (8-bit mode)
+		hd44780_write(dev, HD44780_REG_SEL_IR, 0x30);
+		hd44780_write(dev, HD44780_REG_SEL_IR, 0x30);
+		hd44780_write(dev, HD44780_REG_SEL_IR, 0x30);
+		}
 //printf("hd44780_init: init done\n");
 
 	// send function set command (can only be done during initialization)
@@ -264,29 +259,6 @@ void hd44780_init(hd44780_t *dev, uint8_t rows, uint8_t cols, uint8_t bit_mode, 
 
 	// send entry mode command
 	hd44780_entry_mode(dev, HD44780_EM_DIRECTION_LEFT | HD44780_EM_SHIFT_CURSOR);
-	}
-
-//----------------------------------------------------------------------------------------------------
-// position cursor
-//----------------------------------------------------------------------------------------------------
-void hd44780_set_cursor(hd44780_t *dev, uint8_t col, uint8_t row)
-	{
-	static uint8_t offsets[] = {0x00, 0x40, 0x14, 0x54};
-	if (row > (HD44780_ROWS_MAX-1))
-		row = (HD44780_ROWS_MAX-1);
-
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, (uint8_t)(HD44780_SET_DDRAM_ADDR_CMD | (col + offsets[row])));
-	}
-
-//----------------------------------------------------------------------------------------------------
-// write string
-//----------------------------------------------------------------------------------------------------
-void hd44780_write_string(hd44780_t *dev, const char *data, size_t data_len)
-	{
-	for (size_t i = 0; i < data_len; i++)
-		{
-		hd44780_write_byte(dev, HD44780_PIN_RS_DR, (uint8_t)data[i]);
-		}
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -310,7 +282,7 @@ int8_t hd44780_entry_mode_direction(hd44780_t *dev, uint8_t option)
 		}
 
 	// send command
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->entry_mode);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->entry_mode);
 	return 0;
 	}
 
@@ -335,7 +307,7 @@ int8_t hd44780_entry_mode_shift(hd44780_t *dev, uint8_t option)
 		}
 
 	// send command
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->entry_mode);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->entry_mode);
 	return 0;
 	}
 
@@ -352,7 +324,7 @@ int8_t hd44780_display(hd44780_t *dev, uint8_t option)
 			break;
 
 		case HD44780_DC_DISPLAY_ON:
-			dev->disp_control |= HD44780_DC_DISPLAY_ON;
+			dev->disp_control |= HD44780_DC_DISPLAY_MASK;
 			break;
 
 		default:
@@ -360,7 +332,7 @@ int8_t hd44780_display(hd44780_t *dev, uint8_t option)
 		}
 
 	// send command
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->disp_control);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->disp_control);
 	return 0;
 	}
 
@@ -385,7 +357,7 @@ int8_t hd44780_cursor(hd44780_t *dev, uint8_t option)
 		}
 
 	// send command
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->disp_control);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->disp_control);
 	return 0;
 	}
 
@@ -410,7 +382,7 @@ int8_t hd44780_cursor_blink(hd44780_t *dev, uint8_t option)
 		}
 
 	// send command
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->disp_control);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->disp_control);
 	return 0;
 	}
 
@@ -435,7 +407,7 @@ int8_t hd44780_cd_shift(hd44780_t *dev, uint8_t option)
 		}
 
 	// send command
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->cur_disp_shift);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->cur_disp_shift);
 	return 0;
 	}
 
@@ -460,6 +432,59 @@ int8_t hd44780_cd_direction(hd44780_t *dev, uint8_t option)
 		}
 
 	// send command
-	hd44780_write_byte(dev, HD44780_PIN_RS_IR, dev->cur_disp_shift);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->cur_disp_shift);
 	return 0;
+	}
+
+//----------------------------------------------------------------------------------------------------
+// address set
+//----------------------------------------------------------------------------------------------------
+int8_t hd44780_address_set(hd44780_t *dev, uint8_t option, uint8_t address)
+	{
+	// set option
+	switch (option)
+		{
+		case HD44780_SET_CGRAM_ADDR_CMD:
+			dev->address_set = (uint8_t)(HD44780_SET_CGRAM_ADDR_CMD | (address & HD44780_SET_CGRAM_ADDR_MASK));
+			break;
+
+		case HD44780_SET_DDRAM_ADDR_CMD:
+			dev->address_set = (uint8_t)(HD44780_SET_DDRAM_ADDR_CMD | (address & HD44780_SET_DDRAM_ADDR_MASK));
+			break;
+
+		default:
+			return -1;
+		}
+
+	// send command
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->address_set);
+	return 0;
+	}
+
+//----------------------------------------------------------------------------------------------------
+// set cursor position
+//----------------------------------------------------------------------------------------------------
+int8_t hd44780_set_cursor(hd44780_t *dev, uint8_t row, uint8_t column)
+	{
+	static uint8_t row_offset[] = {0x00, 0x40, 0x14, 0x54};
+
+	// validate arguments
+	if (row > (dev->rows - 1))
+		return -1;
+	if (column > (dev->cols - 1))
+		return -1;
+
+	hd44780_address_set(dev, HD44780_SET_DDRAM_ADDR_CMD, (uint8_t)(row_offset[row] + column));
+	return 0;
+	}
+
+//----------------------------------------------------------------------------------------------------
+// write data
+//----------------------------------------------------------------------------------------------------
+void hd44780_write_data(hd44780_t *dev, const char *data, size_t data_len)
+	{
+	for (size_t i = 0; i < data_len; i++)
+		{
+		hd44780_write_byte(dev, HD44780_REG_SEL_DR, (uint8_t)data[i]);
+		}
 	}
