@@ -4,17 +4,18 @@
 #include "pin.h"
 
 // device structure
-typedef struct hd44780
+typedef struct hd44780_s
 	{
-	uint8_t valid_flag;     // valid device-data flag
+	uint8_t struct_valid;   // structure valid flag
+	uint8_t device_valid;   // device valid flag
 	uint8_t rows;           // number of display rows
 	uint8_t cols;           // number of display columns
 	uint8_t ir_address;     // instruction register returned address 
-	uint8_t entry_mode;     // saved entry mode
-	uint8_t disp_control;   // saved display control
-	uint8_t cur_disp_shift; // saved cursor/display shift
-	uint8_t func_set;       // saved function set
-	uint8_t address_set;    // saved address set
+	uint8_t entry_mode;     // saved entry mode command
+	uint8_t disp_control;   // saved display control command
+	uint8_t cd_shift;       // saved cursor/display shift command
+	uint8_t func_set;       // saved function set command
+	uint8_t data_address;   // saved data address command
 	pin_t   pin_rs;         // register select pin
 	pin_t   pin_rw;         // read/write pin
 	pin_t   pin_en;         // enable pin
@@ -26,6 +27,8 @@ typedef struct hd44780
 #define HD44780_INVALID  0xFE
 
 // prototypes
+
+// low level
 uint8_t  hd44780_read(hd44780_t *dev, uint8_t reg_sel);
 uint8_t  hd44780_read_byte(hd44780_t *dev, uint8_t reg_sel);
 
@@ -34,34 +37,36 @@ void     hd44780_busy_flag_wait(hd44780_t *dev);
 void     hd44780_write(hd44780_t *dev, uint8_t reg_sel, uint8_t data);
 void     hd44780_write_byte(hd44780_t *dev, uint8_t reg_sel, uint8_t data_byte);
 
-// register select
-#define HD44780_REG_SEL_IR    0x00
-#define HD44780_REG_SEL_DR    0x01
-
-void     hd44780_func_set(hd44780_t *dev, uint8_t options);
-void     hd44780_entry_mode(hd44780_t *dev, uint8_t options);
-void     hd44780_disp_control(hd44780_t *dev, uint8_t options);
-void     hd44780_cur_disp_shift(hd44780_t *dev, uint8_t options);
-void     hd44780_clear(hd44780_t *dev);
-void     hd44780_home(hd44780_t *dev);
-
-void     hd44780_init(hd44780_t *dev, uint8_t rows, uint8_t cols, uint8_t bit_mode, uint8_t lines, uint8_t font,
+void     hd44780_init_struct(hd44780_t *dev, uint8_t rows, uint8_t cols,
                 uint8_t pin_rs_ard, uint8_t pin_rw_ard, uint8_t pin_en_ard,
                 uint8_t data_0_ard, uint8_t data_1_ard, uint8_t data_2_ard, uint8_t data_3_ard,
                 uint8_t data_4_ard, uint8_t data_5_ard, uint8_t data_6_ard, uint8_t data_7_ard);
+void     hd44780_init_device(hd44780_t *dev, uint8_t bit_mode, uint8_t lines, uint8_t font);
 
+// primitives
+void     hd44780_func_set(hd44780_t *dev, uint8_t options);
+void     hd44780_entry_mode(hd44780_t *dev, uint8_t options);
+void     hd44780_disp_control(hd44780_t *dev, uint8_t options);
+void     hd44780_cd_shift(hd44780_t *dev, uint8_t options);
+void     hd44780_clear(hd44780_t *dev);
+void     hd44780_home(hd44780_t *dev);
+
+// high level
 int8_t   hd44780_entry_mode_direction(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_entry_mode_shift(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_display(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cursor(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cursor_blink(hd44780_t *dev, uint8_t option);
-int8_t   hd44780_cd_shift(hd44780_t *dev, uint8_t option);
-int8_t   hd44780_cd_direction(hd44780_t *dev, uint8_t option);
-int8_t   hd44780_address_set(hd44780_t *dev, uint8_t option, uint8_t address);
-
-int8_t   hd44780_set_cursor(hd44780_t *dev, uint8_t col, uint8_t row);
+int8_t   hd44780_cd_shift_cd(hd44780_t *dev, uint8_t option);
+int8_t   hd44780_cd_shift_direction(hd44780_t *dev, uint8_t option);
+int8_t   hd44780_data_address(hd44780_t *dev, uint8_t option, uint8_t address);
+int8_t   hd44780_cursor_pos(hd44780_t *dev, uint8_t col, uint8_t row);
 void     hd44780_write_data(hd44780_t *dev, const char *data, size_t data_len);
 
+
+// register select values
+#define HD44780_REG_SEL_IR    0x00
+#define HD44780_REG_SEL_DR    0x01
 
 // hd44780 instruction register constants
 #define HD44780_IR_BUSY_FLAG_MASK      0x80
@@ -92,13 +97,13 @@ void     hd44780_write_data(hd44780_t *dev, const char *data, size_t data_len);
 #define HD44780_DC_CURSOR_BLINK_ON     0x01
 
 #define HD44780_CUR_DISP_SHIFT_CMD     0x10
-#define HD44780_CDS_OPTIONS_MASK       0x0C
-#define HD44780_CDS_SHIFT_MASK         0x08
-#define HD44780_CDS_SHIFT_CURSOR       0x00
-#define HD44780_CDS_SHIFT_DISPLAY      0x08
-#define HD44780_CDS_DIRECTION_MASK     0x04
-#define HD44780_CDS_DIRECTION_LEFT     0x00
-#define HD44780_CDS_DIRECTION_RIGHT    0x04
+#define HD44780_CD_OPTIONS_MASK        0x0C
+#define HD44780_CD_SHIFT_MASK          0x08
+#define HD44780_CD_SHIFT_CURSOR        0x00
+#define HD44780_CD_SHIFT_DISPLAY       0x08
+#define HD44780_CD_DIRECTION_MASK      0x04
+#define HD44780_CD_DIRECTION_LEFT      0x00
+#define HD44780_CD_DIRECTION_RIGHT     0x04
 
 #define HD44780_FUNCTION_SET_CMD       0x20
 #define HD44780_FS_OPTIONS_MASK        0x1C

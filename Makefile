@@ -38,7 +38,7 @@ TEST_OBJ   = $(TEST_TGT).o
 STANDARD   = -std=gnu11
 #TEMPS      = -save-temps
 #DEBUG      = -g
-#DEBUG      = -D DEBUG
+DEBUG      = -D DEBUG
 #OPTIMIZE   = -O2
 INC_DIRS   = -I../../include
 LIB_DIRS   = -L../../lib

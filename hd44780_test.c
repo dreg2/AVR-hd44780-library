@@ -30,11 +30,15 @@ int main(void)
 
 	// initialize lcd
 	hd44780_t lcd;
-//	hd44780_init(&lcd, LCD_ROWS, LCD_COLS, HD44780_FS_BITS_4, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8,
-//	hd44780_init(&lcd, LCD_ROWS, LCD_COLS, HD44780_FS_BITS_4, HD44780_FS_LINES_1, HD44780_FS_FONT_5x10,
-//			PIN_RS, PIN_RW, PIN_EN, PIN_NOT_USED, PIN_NOT_USED, PIN_NOT_USED, PIN_NOT_USED, PIN_DATA4, PIN_DATA5, PIN_DATA6, PIN_DATA7);
-	hd44780_init(&lcd, LCD_ROWS, LCD_COLS, HD44780_FS_BITS_8, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8,
-			PIN_RS, PIN_RW, PIN_EN, PIN_DATA0, PIN_DATA1, PIN_DATA2, PIN_DATA3, PIN_DATA4, PIN_DATA5, PIN_DATA6, PIN_DATA7);
+//	hd44780_init_struct(&lcd, LCD_ROWS, LCD_COLS, PIN_RS, PIN_RW, PIN_EN,
+//			PIN_NOT_USED, PIN_NOT_USED, PIN_NOT_USED, PIN_NOT_USED, PIN_DATA4, PIN_DATA5, PIN_DATA6, PIN_DATA7);
+	hd44780_init_struct(&lcd, LCD_ROWS, LCD_COLS, PIN_RS, PIN_RW, PIN_EN,
+			PIN_DATA0, PIN_DATA1, PIN_DATA2, PIN_DATA3, PIN_DATA4, PIN_DATA5, PIN_DATA6, PIN_DATA7);
+
+//	hd44780_init_device(&lcd, HD44780_FS_BITS_4, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8);
+	hd44780_init_device(&lcd, HD44780_FS_BITS_8, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8);
+//	hd44780_init_device(&lcd, HD44780_FS_BITS_8, HD44780_FS_LINES_1, HD44780_FS_FONT_5x10);
+
         printf("lcd initialized\n");
         getchar();
 
@@ -79,11 +83,11 @@ int main(void)
 	hd44780_clear(&lcd);
 	hd44780_home(&lcd);
 	hd44780_write_data(&lcd, test_string, 1);
-	hd44780_set_cursor(&lcd, 1, 10);
+	hd44780_cursor_pos(&lcd, 1, 10);
 	hd44780_write_data(&lcd, test_string, 1);
-	hd44780_set_cursor(&lcd, 2, 5);
+	hd44780_cursor_pos(&lcd, 2, 5);
 	hd44780_write_data(&lcd, test_string, 1);
-	hd44780_set_cursor(&lcd, 3, 15);
+	hd44780_cursor_pos(&lcd, 3, 15);
 	hd44780_write_data(&lcd, test_string, 1);
 
 	printf("end program\n");
