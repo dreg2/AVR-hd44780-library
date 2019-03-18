@@ -38,13 +38,11 @@ int main(void)
 //	hd44780_init_device(&lcd, HD44780_FS_BITS_4, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8);
 	hd44780_init_device(&lcd, HD44780_FS_BITS_8, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8);
 //	hd44780_init_device(&lcd, HD44780_FS_BITS_8, HD44780_FS_LINES_1, HD44780_FS_FONT_5x10);
+	hd44780_clear(&lcd);
+	hd44780_entry_mode(&lcd, HD44780_EM_DIRECTION_RIGHT | HD44780_EM_SHIFT_CURSOR);
+	hd44780_disp_control(&lcd, HD44780_DC_DISPLAY_ON | HD44780_DC_CURSOR_ON | HD44780_DC_CURSOR_BLINK_ON);
 
         printf("lcd initialized\n");
-        getchar();
-
-	// set display on, cursor on, blink on
-	hd44780_disp_control(&lcd, HD44780_DC_DISPLAY_ON | HD44780_DC_CURSOR_ON | HD44780_DC_CURSOR_BLINK_ON);
-        printf("lcd on\n");
         getchar();
 
 	// send test string

@@ -148,8 +148,8 @@ debug_printf("hd44780_write_byte: %c 0x%02hx\n", (reg_sel == HD44780_REG_SEL_IR 
 // initialize device structure
 //----------------------------------------------------------------------------------------------------
 void hd44780_init_struct(hd44780_t *dev, uint8_t rows, uint8_t cols, uint8_t pin_rs_ard, uint8_t pin_rw_ard, uint8_t pin_en_ard,
-                uint8_t data_0_ard, uint8_t data_1_ard, uint8_t data_2_ard, uint8_t data_3_ard,
-                uint8_t data_4_ard, uint8_t data_5_ard, uint8_t data_6_ard, uint8_t data_7_ard)
+		uint8_t data_0_ard, uint8_t data_1_ard, uint8_t data_2_ard, uint8_t data_3_ard,
+		uint8_t data_4_ard, uint8_t data_5_ard, uint8_t data_6_ard, uint8_t data_7_ard)
 	{
 	// intialize control fields
 	dev->struct_valid = HD44780_INVALID;
@@ -170,6 +170,11 @@ void hd44780_init_struct(hd44780_t *dev, uint8_t rows, uint8_t cols, uint8_t pin
 	pin_init_ard(&dev->pin_data[6], data_6_ard);
 	pin_init_ard(&dev->pin_data[7], data_7_ard);
 
+	// initialize command fields
+	dev->entry_mode   = HD44780_ENTRY_MODE_CMD;
+	dev->disp_control = HD44780_DISPLAY_CONTROL_CMD;
+	dev->cd_shift     = HD44780_CUR_DISP_SHIFT_CMD;
+
 	// mark structure as initialized
 	dev->struct_valid = HD44780_VALID;
 	}
@@ -185,6 +190,9 @@ void hd44780_init_device(hd44780_t *dev, uint8_t bit_mode, uint8_t lines, uint8_
 	// check for initialized structure
 	if (dev->struct_valid != HD44780_VALID)
 		return;
+
+	// mark device as valid
+	dev->device_valid = HD44780_VALID;
 
 	// Configure control pins as output and set low
 	pin_state_set(&dev->pin_rs, PIN_OUT_LOW); // rs = IR
@@ -215,22 +223,8 @@ void hd44780_init_device(hd44780_t *dev, uint8_t bit_mode, uint8_t lines, uint8_
 //printf("hd44780_init: init done\n");
 
 	// write function set command (can only be done during initialization)
-        dev->func_set = (uint8_t)(HD44780_FUNCTION_SET_CMD | bit_mode | lines | font);
-        hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->func_set);
- 
-	// write display control command
-        dev->disp_control = (uint8_t)(HD44780_DISPLAY_CONTROL_CMD | HD44780_DC_DISPLAY_OFF | HD44780_DC_CURSOR_OFF | HD44780_DC_CURSOR_BLINK_OFF);
-        hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->disp_control);
- 
-	// write clear display command
-	hd44780_write_byte(dev, HD44780_REG_SEL_IR, HD44780_CLEAR_DISPLAY_CMD);
-
-	// write entry mode command
-        dev->entry_mode = (uint8_t)(HD44780_ENTRY_MODE_CMD | HD44780_EM_DIRECTION_LEFT | HD44780_EM_SHIFT_CURSOR);
-        hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->entry_mode);
-
-	// mark device as initialized
-	dev->device_valid = HD44780_VALID;
+	dev->func_set = (uint8_t)(HD44780_FUNCTION_SET_CMD | bit_mode | lines | font);
+	hd44780_write_byte(dev, HD44780_REG_SEL_IR, dev->func_set);
 	}
 
 //----------------------------------------------------------------------------------------------------

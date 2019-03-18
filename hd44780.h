@@ -44,10 +44,10 @@ void     hd44780_init_struct(hd44780_t *dev, uint8_t rows, uint8_t cols,
 void     hd44780_init_device(hd44780_t *dev, uint8_t bit_mode, uint8_t lines, uint8_t font);
 
 // primitives
-void     hd44780_func_set(hd44780_t *dev, uint8_t options);
 void     hd44780_entry_mode(hd44780_t *dev, uint8_t options);
 void     hd44780_disp_control(hd44780_t *dev, uint8_t options);
 void     hd44780_cd_shift(hd44780_t *dev, uint8_t options);
+void     hd44780_func_set(hd44780_t *dev, uint8_t options);
 void     hd44780_clear(hd44780_t *dev);
 void     hd44780_home(hd44780_t *dev);
 
