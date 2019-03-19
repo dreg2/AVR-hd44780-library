@@ -10,12 +10,15 @@ typedef struct hd44780_s
 	uint8_t device_valid;   // device valid flag
 	uint8_t rows;           // number of display rows
 	uint8_t cols;           // number of display columns
-	uint8_t ir_address;     // instruction register returned address 
+	uint8_t ir_data;        // data read from instruction register
+
 	uint8_t entry_mode;     // saved entry mode command
 	uint8_t disp_control;   // saved display control command
 	uint8_t cd_shift;       // saved cursor/display shift command
 	uint8_t func_set;       // saved function set command
-	uint8_t data_address;   // saved data address command
+	uint8_t cgram_addr;     // saved cgram address command
+	uint8_t ddram_addr;     // saved ddram address command
+
 	pin_t   pin_rs;         // register select pin
 	pin_t   pin_rw;         // read/write pin
 	pin_t   pin_en;         // enable pin
@@ -43,13 +46,7 @@ void     hd44780_init_struct(hd44780_t *dev, uint8_t rows, uint8_t cols,
                 uint8_t data_4_ard, uint8_t data_5_ard, uint8_t data_6_ard, uint8_t data_7_ard);
 void     hd44780_init_device(hd44780_t *dev, uint8_t bit_mode, uint8_t lines, uint8_t font);
 
-// primitives
-void     hd44780_entry_mode(hd44780_t *dev, uint8_t options);
-void     hd44780_disp_control(hd44780_t *dev, uint8_t options);
-void     hd44780_cd_shift(hd44780_t *dev, uint8_t options);
-void     hd44780_func_set(hd44780_t *dev, uint8_t options);
-void     hd44780_clear(hd44780_t *dev);
-void     hd44780_home(hd44780_t *dev);
+void     hd44780_command(hd44780_t *dev, uint8_t command, uint8_t options);
 
 // high level
 int8_t   hd44780_entry_mode_direction(hd44780_t *dev, uint8_t option);
@@ -59,7 +56,9 @@ int8_t   hd44780_cursor(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cursor_blink(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cd_shift_cd(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cd_shift_direction(hd44780_t *dev, uint8_t option);
-int8_t   hd44780_data_address(hd44780_t *dev, uint8_t option, uint8_t address);
+int8_t   hd44780_cgram_addr(hd44780_t *dev, uint8_t option);
+int8_t   hd44780_ddram_addr(hd44780_t *dev, uint8_t option);
+
 int8_t   hd44780_cursor_pos(hd44780_t *dev, uint8_t col, uint8_t row);
 void     hd44780_write_data(hd44780_t *dev, const char *data, size_t data_len);
 

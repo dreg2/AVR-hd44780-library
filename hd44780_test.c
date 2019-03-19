@@ -38,16 +38,16 @@ int main(void)
 //	hd44780_init_device(&lcd, HD44780_FS_BITS_4, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8);
 	hd44780_init_device(&lcd, HD44780_FS_BITS_8, HD44780_FS_LINES_2, HD44780_FS_FONT_5x8);
 //	hd44780_init_device(&lcd, HD44780_FS_BITS_8, HD44780_FS_LINES_1, HD44780_FS_FONT_5x10);
-	hd44780_clear(&lcd);
-	hd44780_entry_mode(&lcd, HD44780_EM_DIRECTION_RIGHT | HD44780_EM_SHIFT_CURSOR);
-	hd44780_disp_control(&lcd, HD44780_DC_DISPLAY_ON | HD44780_DC_CURSOR_ON | HD44780_DC_CURSOR_BLINK_ON);
+	hd44780_command(&lcd, HD44780_CLEAR_DISPLAY_CMD, 0x00);
+	hd44780_command(&lcd, HD44780_ENTRY_MODE_CMD, HD44780_EM_DIRECTION_RIGHT | HD44780_EM_SHIFT_CURSOR);
+	hd44780_command(&lcd, HD44780_DISPLAY_CONTROL_CMD, HD44780_DC_DISPLAY_ON | HD44780_DC_CURSOR_ON | HD44780_DC_CURSOR_BLINK_ON);
 
         printf("lcd initialized\n");
         getchar();
 
 	// send test string
 	const char *test_string = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789!@#$%^&*()-_+=";
-	hd44780_entry_mode(&lcd, HD44780_EM_DIRECTION_RIGHT | HD44780_EM_SHIFT_CURSOR);
+	hd44780_command(&lcd, HD44780_ENTRY_MODE_CMD, HD44780_EM_DIRECTION_RIGHT | HD44780_EM_SHIFT_CURSOR);
 	hd44780_write_data(&lcd, test_string, strlen(test_string));
         printf("print test\n");
         getchar();
@@ -78,8 +78,8 @@ int main(void)
 
 	// move cursor
         printf("move cursor\n");
-	hd44780_clear(&lcd);
-	hd44780_home(&lcd);
+	hd44780_command(&lcd, HD44780_CLEAR_DISPLAY_CMD, 0x00);
+	hd44780_command(&lcd, HD44780_RETURN_HOME_CMD, 0x00);
 	hd44780_write_data(&lcd, test_string, 1);
 	hd44780_cursor_pos(&lcd, 1, 10);
 	hd44780_write_data(&lcd, test_string, 1);
