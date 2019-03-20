@@ -25,10 +25,6 @@ typedef struct hd44780_s
 	pin_t   pin_data[8];    // data pin array
 	} hd44780_t;
 
-// valid flag values
-#define HD44780_VALID    0xFF
-#define HD44780_INVALID  0xFE
-
 // prototypes
 
 // low level
@@ -40,13 +36,13 @@ void     hd44780_busy_flag_wait(hd44780_t *dev);
 void     hd44780_write(hd44780_t *dev, uint8_t reg_sel, uint8_t data);
 void     hd44780_write_byte(hd44780_t *dev, uint8_t reg_sel, uint8_t data_byte);
 
+void     hd44780_command(hd44780_t *dev, uint8_t command, uint8_t options);
+
 void     hd44780_init_struct(hd44780_t *dev, uint8_t rows, uint8_t cols,
                 uint8_t pin_rs_ard, uint8_t pin_rw_ard, uint8_t pin_en_ard,
                 uint8_t data_0_ard, uint8_t data_1_ard, uint8_t data_2_ard, uint8_t data_3_ard,
                 uint8_t data_4_ard, uint8_t data_5_ard, uint8_t data_6_ard, uint8_t data_7_ard);
-void     hd44780_init_device(hd44780_t *dev, uint8_t bit_mode, uint8_t lines, uint8_t font);
-
-void     hd44780_command(hd44780_t *dev, uint8_t command, uint8_t options);
+int8_t   hd44780_init_device(hd44780_t *dev, uint8_t bit_mode, uint8_t lines, uint8_t font);
 
 // high level
 int8_t   hd44780_entry_mode_direction(hd44780_t *dev, uint8_t option);
@@ -54,7 +50,7 @@ int8_t   hd44780_entry_mode_shift(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_display(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cursor(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cursor_blink(hd44780_t *dev, uint8_t option);
-int8_t   hd44780_cd_shift_cd(hd44780_t *dev, uint8_t option);
+int8_t   hd44780_cd_shift(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cd_shift_direction(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_cgram_addr(hd44780_t *dev, uint8_t option);
 int8_t   hd44780_ddram_addr(hd44780_t *dev, uint8_t option);
@@ -63,9 +59,13 @@ int8_t   hd44780_cursor_pos(hd44780_t *dev, uint8_t col, uint8_t row);
 void     hd44780_write_data(hd44780_t *dev, const char *data, size_t data_len);
 
 
+// flag values
+#define HD44780_VALID                  0xFF
+#define HD44780_INVALID                0xFE
+
 // register select values
-#define HD44780_REG_SEL_IR    0x00
-#define HD44780_REG_SEL_DR    0x01
+#define HD44780_REG_SEL_IR             0x00
+#define HD44780_REG_SEL_DR             0x01
 
 // hd44780 instruction register constants
 #define HD44780_IR_BUSY_FLAG_MASK      0x80
